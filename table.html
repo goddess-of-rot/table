@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Table</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eef2f3;
+      padding: 20px;
+      text-align: center;
+    }
+    button {
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      margin: 5px;
+      border-radius: 5px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .add-btn { background-color: #007bff; color: white; }
+    .add-btn:hover { background-color: #0056b3; transform: scale(1.05); }
+    .edit-btn { background-color: #28a745; color: white; }
+    .edit-btn:hover { background-color: #1e7e34; }
+    .delete-btn { background-color: #dc3545; color: white; }
+    .delete-btn:hover { background-color: #a71d2a; }
+    .insert-btn { background-color: #f0ad4e; color: white; }
+    .insert-btn:hover { background-color: #ec971f; }
+    table {
+      width: 80%;
+      margin: 0 auto;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    tbody tr {
+      cursor: grab;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 320px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .modal-content input, .modal-content select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .close-btn {
+      background: red;
+      color: white;
+      align-self: flex-end;
+      padding: 5px 10px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <button class="add-btn" onclick="openModal(null, 'add')">Add Details</button>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Mobile No.</th>
+        <th>Address</th>
+        <th>Gender</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="userTableBody"></tbody>
+  </table>
+  
+  <div class="modal" id="userModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <h2 id="modalTitle">Add Details</h2>
+      <!-- Hidden fields to store editing information and mode -->
+      <input type="hidden" id="editingRowIndex">
+      <input type="hidden" id="modalMode" value="add">
+      
+      <label>Name: <input type="text" id="name"></label>
+      <label>Age: <input type="number" id="age"></label>
+      <label>Mobile No.: <input type="text" id="mobile"></label>
+      <label>Address: <input type="text" id="address"></label>
+      <label>Gender: 
+        <select id="gender">
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </label>
+      <button onclick="saveUser()">Submit</button>
+    </div>
+  </div>
+  
+  <script>
+    // Open modal with mode ("add", "edit", "insertAbove", or "insertBelow")
+    function openModal(index = null, mode = 'add') {
+      document.getElementById("userModal").style.display = "flex";
+      document.getElementById("modalMode").value = mode;
+      document.getElementById("editingRowIndex").value = index !== null ? index : "";
+      if(mode === 'edit' && index !== null) {
+        document.getElementById("modalTitle").innerText = "Edit Details";
+        let row = document.getElementById("userTableBody").rows[index];
+        document.getElementById("name").value = row.cells[1].innerText;
+        document.getElementById("age").value = row.cells[2].innerText;
+        document.getElementById("mobile").value = row.cells[3].innerText;
+        document.getElementById("address").value = row.cells[4].innerText;
+        document.getElementById("gender").value = row.cells[5].innerText;
+      } else if(mode === 'insertAbove' || mode === 'insertBelow') {
+        document.getElementById("modalTitle").innerText = mode === 'insertAbove' ? "Insert Details Above" : "Insert Details Below";
+        // Clear fields for insertion
+        document.getElementById("name").value = "";
+        document.getElementById("age").value = "";
+        document.getElementById("mobile").value = "";
+        document.getElementById("address").value = "";
+        document.getElementById("gender").value = "Male";
+      } else {
+        document.getElementById("modalTitle").innerText = "Add Details";
+        document.getElementById("name").value = "";
+        document.getElementById("age").value = "";
+        document.getElementById("mobile").value = "";
+        document.getElementById("address").value = "";
+        document.getElementById("gender").value = "Male";
+      }
+    }
+    
+    function closeModal() {
+      document.getElementById("userModal").style.display = "none";
+    }
+    
+    // Save user based on modal mode (add/edit/insertAbove/insertBelow)
+    function saveUser() {
+      let table = document.getElementById("userTableBody");
+      let mode = document.getElementById("modalMode").value;
+      let index = document.getElementById("editingRowIndex").value;
+      let name = document.getElementById("name").value.trim();
+      let age = document.getElementById("age").value;
+      let mobile = document.getElementById("mobile").value.trim();
+      let address = document.getElementById("address").value.trim();
+      let gender = document.getElementById("gender").value;
+      
+      // Check for duplicate name if adding new entry
+      let existingUsers = Array.from(table.rows).map(row => row.cells[1].innerText);
+      if (existingUsers.includes(name) && mode === "add") {
+        alert("User already exists!");
+        return;
+      }
+      
+      let newRow;
+      if (mode === "edit" && index !== "") {
+        newRow = table.rows[index];
+      } else if (mode === "insertAbove" && index !== "") {
+        newRow = table.insertRow(parseInt(index));
+      } else if (mode === "insertBelow" && index !== "") {
+        newRow = table.insertRow(parseInt(index) + 1);
+      } else {
+        newRow = table.insertRow();
+      }
+      
+      // Make row draggable and add drag event listeners
+      newRow.draggable = true;
+      newRow.ondragstart = dragStart;
+      newRow.ondragover = dragOver;
+      newRow.ondrop = dropRow;
+      
+      newRow.innerHTML = `
+        <td></td>
+        <td>${name}</td>
+        <td>${age}</td>
+        <td>${mobile}</td>
+        <td>${address}</td>
+        <td>${gender}</td>
+        <td>
+          <button class="edit-btn" onclick="openModal(${newRow.rowIndex - 1}, 'edit')">Edit</button>
+          <button class="insert-btn" onclick="openModal(${newRow.rowIndex - 1}, 'insertAbove')">Insert Above</button>
+          <button class="insert-btn" onclick="openModal(${newRow.rowIndex - 1}, 'insertBelow')">Insert Below</button>
+          <button class="delete-btn" onclick="deleteRow(this)">Delete</button>
+        </td>
+      `;
+      
+      updateSerialNumbers();
+      closeModal();
+    }
+    
+    function deleteRow(button) {
+      let row = button.parentNode.parentNode;
+      row.parentNode.removeChild(row);
+      updateSerialNumbers();
+    }
+    
+    // Update serial numbers after any change
+    function updateSerialNumbers() {
+      let rows = document.querySelectorAll("#userTableBody tr");
+      rows.forEach((row, index) => {
+        row.cells[0].innerText = index + 1;
+        // Update button onclick indices as row order changes
+        let editBtn = row.querySelector(".edit-btn");
+        let insertAboveBtn = row.querySelector("button[onclick*='insertAbove']");
+        let insertBelowBtn = row.querySelector("button[onclick*='insertBelow']");
+        if (editBtn) editBtn.setAttribute("onclick", `openModal(${index}, 'edit')`);
+        if (insertAboveBtn) insertAboveBtn.setAttribute("onclick", `openModal(${index}, 'insertAbove')`);
+        if (insertBelowBtn) insertBelowBtn.setAttribute("onclick", `openModal(${index}, 'insertBelow')`);
+      });
+    }
+    
+    // Drag and drop functions
+    let draggedRowIndex = null;
+    
+    function dragStart(event) {
+      draggedRowIndex = event.target.rowIndex;
+      event.dataTransfer.setData("text/plain", draggedRowIndex);
+    }
+    
+    function dragOver(event) {
+      event.preventDefault();
+    }
+    
+    function dropRow(event) {
+      event.preventDefault();
+      let fromIndex = parseInt(event.dataTransfer.getData("text/plain"));
+      let targetRow = event.target.closest("tr");
+      if (!targetRow) return;
+      let toIndex = targetRow.rowIndex;
+      if (fromIndex === toIndex) return;
+      
+      let table = document.getElementById("userTableBody");
+      let movingRow = table.rows[fromIndex - 1];
+      // Insert before the target row based on drop position
+      if (fromIndex < toIndex) {
+        table.insertBefore(movingRow, table.rows[toIndex - 1].nextSibling);
+      } else {
+        table.insertBefore(movingRow, table.rows[toIndex - 1]);
+      }
+      updateSerialNumbers();
+    }
+  </script>
+</body>
+</html>
